@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Phishing Awareness Simulation — Training Console</title>
+<style>
+  :root {
+    --paper: #EDEFEA;
+    --paper-raised: #F6F7F3;
+    --ink: #1B2A2F;
+    --ink-soft: #4B5A5C;
+    --line: #C7CCC2;
+    --teal: #2F6F6B;
+    --teal-deep: #1F4F4C;
+    --amber: #C9822F;
+    --amber-soft: #F3E3CC;
+    --red: #B8463C;
+    --red-soft: #F4DBD7;
+    --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --serif: Georgia, "Times New Roman", serif;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #141B1C;
+      --paper-raised: #1B2426;
+      --ink: #E8ECE8;
+      --ink-soft: #9FB0AC;
+      --line: #2E3A39;
+      --amber-soft: #3A2E1B;
+      --red-soft: #3A2320;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #141B1C;
+    --paper-raised: #1B2426;
+    --ink: #E8ECE8;
+    --ink-soft: #9FB0AC;
+    --line: #2E3A39;
+    --amber-soft: #3A2E1B;
+    --red-soft: #3A2320;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+
+  .authz-banner {
+    background: var(--teal-deep);
+    color: #EFF4F1;
+    padding: 10px 20px;
+    font-size: 13px;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 50;
+    border-bottom: 1px solid rgba(0,0,0,.2);
+  }
+  .authz-banner strong { font-weight: 700; }
+
+  header.appbar {
+    padding: 22px 24px 0;
+    max-width: 1040px;
+    margin: 0 auto;
+  }
+  .masthead {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    flex-wrap: wrap;
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 16px;
+  }
+  .masthead h1 {
+    font-family: var(--serif);
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+  }
+  .masthead p.sub {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 14px;
+    max-width: 48ch;
+  }
+  .scope-tag {
+    font-family: var(--mono);
+    font-size: 12px;
+    border: 1px solid var(--line);
+    padding: 6px 10px;
+    border-radius: 3px;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+
+  nav.tabs {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    gap: 2px;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--line);
+  }
+  nav.tabs button {
+    font-family: var(--sans);
+    background: none;
+    border: none;
+    padding: 14px 16px;
+    font-size: 14px;
+    color: var(--ink-soft);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+  }
+  nav.tabs button.active {
+    color: var(--ink);
+    border-bottom-color: var(--teal);
+    font-weight: 600;
+  }
+  nav.tabs button:hover:not(.active) { color: var(--ink); }
+
+  main {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 28px 24px 80px;
+  }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  h2.panel-title {
+    font-family: var(--serif);
+    font-size: 21px;
+    margin: 0 0 6px;
+  }
+  p.panel-desc {
+    color: var(--ink-soft);
+    font-size: 14px;
+    margin: 0 0 24px;
+    max-width: 64ch;
+  }
+
+  /* ---- Scenario builder ---- */
+  .scenario-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .scenario-card {
+    text-align: left;
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 14px 16px;
+    cursor: pointer;
+    font-family: var(--sans);
+  }
+  .scenario-card.selected {
+    border-color: var(--teal);
+    box-shadow: inset 0 0 0 1px var(--teal);
+  }
+  .scenario-card .k { font-family: var(--mono); font-size: 11px; color: var(--teal); text-transform: uppercase; }
+  .scenario-card .t { font-weight: 600; margin: 4px 0 4px; font-size: 14px; }
+  .scenario-card .d { font-size: 12.5px; color: var(--ink-soft); }
+
+  .field-row { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 20px; }
+  .field { flex: 1; min-width: 180px; }
+  .field label { display: block; font-size: 12px; color: var(--ink-soft); margin-bottom: 5px; font-family: var(--mono); }
+  .field select, .field input[type=number] {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: var(--paper-raised);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 14px;
+  }
+
+  /* ---- simulated email ---- */
+  .inbox-frame {
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--paper-raised);
+  }
+  .inbox-frame .chrome {
+    background: var(--ink);
+    color: #DCE4E1;
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 7px 14px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .mail-head {
+    padding: 18px 22px 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .mail-head .subject { font-size: 17px; font-weight: 700; margin: 0 0 10px; }
+  .mail-head .row { font-size: 13px; color: var(--ink-soft); display: flex; gap: 8px; }
+  .mail-head .row b { color: var(--ink); font-weight: 600; }
+  .mail-body { padding: 24px 22px; font-size: 14.5px; }
+  .mail-body p { margin: 0 0 14px; }
+  .cta-btn {
+    display: inline-block;
+    background: #2B579A;
+    color: #fff !important;
+    text-decoration: none;
+    padding: 11px 22px;
+    border-radius: 3px;
+    font-size: 14px;
+    font-weight: 600;
+    margin: 6px 0 18px;
+    border: none;
+    cursor: pointer;
+    font-family: var(--sans);
+  }
+  .mail-body .sub-link { font-size: 12px; color: #6B7A7C; word-break: break-all; }
+  .mail-footer { padding: 14px 22px; border-top: 1px solid var(--line); font-size: 11px; color: var(--ink-soft); }
+
+  .inbox-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+  button.action {
+    font-family: var(--sans);
+    font-size: 13.5px;
+    font-weight: 600;
+    padding: 10px 16px;
+    border-radius: 3px;
+    border: 1px solid var(--line);
+    background: var(--paper-raised);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  button.action.primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  button.action.report { background: var(--teal); color: #fff; border-color: var(--teal); }
+  button.action:hover { filter: brightness(1.04); }
+  button.action:disabled { opacity: .45; cursor: not-allowed; }
+
+  .flag-note {
+    margin-top: 16px;
+    background: var(--amber-soft);
+    border: 1px solid var(--amber);
+    border-radius: 4px;
+    padding: 10px 14px;
+    font-size: 12.5px;
+    color: var(--ink);
+  }
+
+  /* ---- landing page preview ---- */
+  .browser-chrome {
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .browser-chrome .bar {
+    background: var(--paper-raised);
+    border-bottom: 1px solid var(--line);
+    padding: 9px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .browser-chrome .dots span {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--line);
+    display: inline-block;
+    margin-right: 4px;
+  }
+  .browser-chrome .url {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    background: var(--paper);
+    border-radius: 3px;
+    padding: 4px 10px;
+    flex: 1;
+  }
+  .landing-page {
+    padding: 36px 30px;
+    background: #fff;
+    color: #202020;
+  }
+  .landing-page .sim-ribbon {
+    background: var(--amber);
+    color: #1b1300;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+    padding: 6px;
+    letter-spacing: .02em;
+    margin: -36px -30px 26px;
+  }
+  .landing-page .box {
+    max-width: 320px;
+    margin: 0 auto;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 26px 24px;
+  }
+  .landing-page .box h3 { margin: 0 0 4px; font-size: 18px; }
+  .landing-page .box p.hint { font-size: 12.5px; color: #666; margin: 0 0 18px; }
+  .landing-page .box input {
+    width: 100%;
+    padding: 9px 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    font-size: 13.5px;
+  }
+  .landing-page .box button {
+    width: 100%;
+    padding: 10px;
+    background: #2B579A;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .dummy-tag {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: #999;
+    margin-top: 10px;
+    text-align: center;
+  }
+
+  /* ---- debrief ---- */
+  .debrief-badge {
+    display: inline-block;
+    background: var(--teal);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 7px 14px;
+    border-radius: 3px;
+    margin-bottom: 18px;
+  }
+  .debrief-badge.red { background: var(--red); }
+  .edu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+    margin: 18px 0 24px;
+  }
+  .edu-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 16px 18px;
+  }
+  .edu-card .n { font-family: var(--mono); font-size: 11px; color: var(--teal); }
+  .edu-card h4 { margin: 4px 0 8px; font-size: 14.5px; }
+  .edu-card p { margin: 0; font-size: 13px; color: var(--ink-soft); }
+  .indicator-list { margin: 0; padding-left: 18px; font-size: 13.5px; }
+  .indicator-list li { margin-bottom: 8px; }
+  .report-steps {
+    background: var(--paper-raised);
+    border-left: 3px solid var(--teal);
+    padding: 16px 20px;
+    margin-top: 20px;
+    font-size: 13.5px;
+  }
+  .report-steps ol { margin: 8px 0 0; padding-left: 18px; }
+
+  /* ---- dashboard ---- */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    margin-bottom: 26px;
+  }
+  .stat {
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 14px 16px;
+    background: var(--paper-raised);
+  }
+  .stat .v { font-family: var(--serif); font-size: 30px; font-weight: 700; line-height: 1; }
+  .stat .l { font-size: 11.5px; color: var(--ink-soft); margin-top: 6px; font-family: var(--mono); }
+  .stat.warn .v { color: var(--amber); }
+  .stat.good .v { color: var(--teal); }
+
+  table.runs {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  table.runs th {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--line);
+    padding: 8px 10px;
+  }
+  table.runs td {
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  .pill {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+  .pill.reported { background: #DCEEEB; color: var(--teal-deep); }
+  .pill.clicked { background: var(--red-soft); color: var(--red); }
+  .pill.opened { background: var(--amber-soft); color: var(--amber); }
+  .pill.ignored { background: var(--line); color: var(--ink-soft); }
+
+  .dash-controls { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+  .empty-state {
+    border: 1px dashed var(--line);
+    border-radius: 6px;
+    padding: 34px;
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 13.5px;
+  }
+
+  .consent-box {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--teal);
+    padding: 16px 20px;
+    font-size: 13px;
+    margin-bottom: 26px;
+    border-radius: 0 5px 5px 0;
+  }
+  .consent-box h4 { margin: 0 0 8px; font-size: 13px; }
+  .consent-box ul { margin: 6px 0 0; padding-left: 18px; }
+  .consent-box li { margin-bottom: 4px; }
+
+  footer.note {
+    max-width: 1040px;
+    margin: 30px auto 0;
+    padding: 0 24px 30px;
+    font-size: 11.5px;
+    color: var(--ink-soft);
+  }
+
+  @media (max-width: 560px) {
+    .masthead h1 { font-size: 22px; }
+    main { padding: 20px 16px 60px; }
+    header.appbar { padding: 18px 16px 0; }
+    nav.tabs { padding: 0 16px; }
+  }
+
+  /* ---- executive report ---- */
+  .report-doc {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 40px 44px;
+    max-width: 760px;
+    margin: 0 auto;
+  }
+  .report-doc .r-head {
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 18px;
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .report-doc .r-head h3 { font-family: var(--serif); font-size: 24px; margin: 0 0 4px; }
+  .report-doc .r-head .meta { font-size: 12.5px; color: var(--ink-soft); font-family: var(--mono); }
+  .report-doc .risk-chip {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 7px 14px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .risk-chip.low { background: #DCEEEB; color: var(--teal-deep); }
+  .risk-chip.moderate { background: var(--amber-soft); color: var(--amber); }
+  .risk-chip.high { background: var(--red-soft); color: var(--red); }
+  .report-doc h4.r-section {
+    font-family: var(--serif);
+    font-size: 16px;
+    margin: 28px 0 10px;
+    padding-top: 2px;
+  }
+  .report-doc p { font-size: 14px; margin: 0 0 12px; }
+  .report-doc ul, .report-doc ol { font-size: 13.5px; padding-left: 20px; margin: 0 0 12px; }
+  .report-doc li { margin-bottom: 6px; }
+  .report-doc .r-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    margin: 14px 0 6px;
+  }
+  .report-doc .r-stats div { background: var(--paper-raised); padding: 12px 10px; text-align: center; }
+  .report-doc .r-stats .v { font-family: var(--serif); font-size: 22px; font-weight: 700; display: block; }
+  .report-doc .r-stats .l { font-size: 10px; color: var(--ink-soft); font-family: var(--mono); display: block; margin-top: 3px; }
+  .report-doc .finding {
+    border-left: 3px solid var(--amber);
+    background: var(--amber-soft);
+    padding: 10px 14px;
+    margin-bottom: 10px;
+    font-size: 13px;
+    border-radius: 0 4px 4px 0;
+  }
+  .report-doc .finding.ok { border-color: var(--teal); background: #DCEEEB; }
+  .report-doc .r-foot {
+    margin-top: 30px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+    font-size: 11px;
+    color: var(--ink-soft);
+  }
+  @media print {
+    body * { visibility: hidden; }
+    .report-doc, .report-doc * { visibility: visible; }
+    .report-doc { position: absolute; top: 0; left: 0; width: 100%; border: none; box-shadow: none; max-width: none; padding: 10px 6px; }
+    .no-print { display: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="authz-banner">
+  <strong>Authorized use only.</strong> Deploy exclusively to staff who have consented to participate under your organization's security-awareness program. Not for use outside sanctioned testing.
+</div>
+
+<header class="appbar">
+  <div class="masthead">
+    <div>
+      <h1>Phishing Awareness Simulation</h1>
+      <p class="sub">Build, send, and measure a controlled training exercise. No real credentials, tokens, or personal data are ever collected.</p>
+    </div>
+    <div class="scope-tag" id="scopeTag">COHORT: 0 / 20 · IT &amp; HR</div>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab-btn active" data-panel="builder">1. Scenario</button>
+  <button class="tab-btn" data-panel="inbox">2. Simulated Inbox</button>
+  <button class="tab-btn" data-panel="landing">3. Training Page</button>
+  <button class="tab-btn" data-panel="debrief">4. Debrief</button>
+  <button class="tab-btn" data-panel="dashboard">5. Dashboard</button>
+  <button class="tab-btn" data-panel="report">6. Executive Report</button>
+</nav>
+
+<main>
+
+  <!-- ============ PANEL 1: SCENARIO BUILDER ============ -->
+  <section class="panel active" id="panel-builder">
+    <h2 class="panel-title">Choose a lure scenario</h2>
+    <p class="panel-desc">Each scenario is a realistic but generic business notification. None mimic a real vendor's current login page pixel-for-pixel — they use plain styling so no genuine brand asset or authentication page is reproduced.</p>
+
+    <div class="consent-box">
+      <h4>Before you deploy</h4>
+      <ul>
+        <li>Confirm written authorization from IT/security leadership and, where required, legal/HR sign-off for the named recipient list.</li>
+        <li>Only the pre-approved cohort (&lt; 20 staff, IT &amp; HR) should ever receive this simulation.</li>
+        <li>No field in this tool collects a real password, MFA code, token, cookie, or financial detail — submitted values in the training form are discarded client-side and never transmitted or stored.</li>
+      </ul>
+    </div>
+
+    <div class="scenario-grid" id="scenarioGrid"></div>
+
+    <div class="field-row">
+      <div class="field">
+        <label>Simulated target display name</label>
+        <input type="text" id="targetName" value="Alex Mwangi" />
+      </div>
+      <div class="field">
+        <label>Cohort size (recipients)</label>
+        <input type="number" id="cohortSize" value="18" min="1" max="19" />
+      </div>
+    </div>
+
+    <button class="action primary" id="toInboxBtn">Preview as recipient →</button>
+  </section>
+
+  <!-- ============ PANEL 2: SIMULATED INBOX ============ -->
+  <section class="panel" id="panel-inbox">
+    <h2 class="panel-title">Simulated inbox — recipient view</h2>
+    <p class="panel-desc">This is exactly what the test participant sees. Nothing here sends real mail; it's a static render for walkthroughs and a live log of simulated interaction.</p>
+
+    <div class="inbox-frame">
+      <div class="chrome"><span>SIMULATED MAIL CLIENT — TRAINING ENVIRONMENT</span><span id="inboxTimestamp"></span></div>
+      <div class="mail-head">
+        <p class="subject" id="mSubject"></p>
+        <div class="row"><b>From:</b>&nbsp;<span id="mFrom"></span></div>
+        <div class="row"><b>To:</b>&nbsp;<span id="mTo"></span></div>
+      </div>
+      <div class="mail-body" id="mBody"></div>
+      <div class="mail-footer">This message was generated for an internal, authorized security-awareness exercise. If you believe you received this in error, contact your security team.</div>
+    </div>
+
+    <div class="inbox-actions">
+      <button class="action" id="openBtn">Mark email opened</button>
+      <button class="action primary" id="clickBtn" disabled>Click the link →</button>
+      <button class="action report" id="reportBtn" disabled>🚩 Report suspicious email</button>
+    </div>
+    <div class="flag-note">Try both paths once each to see how the training content differs: clicking through to the dummy sign-in, versus reporting immediately.</div>
+  </section>
+
+  <!-- ============ PANEL 3: LANDING / TRAINING PAGE ============ -->
+  <section class="panel" id="panel-landing">
+    <h2 class="panel-title">Training landing page</h2>
+    <p class="panel-desc">What a participant reaches after clicking. The form below is cosmetic only — any text typed here is discarded immediately and never leaves the browser.</p>
+
+    <div class="browser-chrome">
+      <div class="bar">
+        <span class="dots"><span></span><span></span><span></span></span>
+        <span class="url" id="fakeUrl">training-sim.internal.local/exercise/8f2c91</span>
+      </div>
+      <div class="landing-page">
+        <div class="sim-ribbon">⚠ THIS IS A SECURITY-AWARENESS SIMULATION — NOT A REAL SIGN-IN PAGE</div>
+        <div class="box">
+          <h3>Sign in to continue</h3>
+          <p class="hint">Simulation only — do not enter a real password.</p>
+          <input type="text" placeholder="Username (not recorded)" id="dummyUser" autocomplete="off" />
+          <input type="password" placeholder="Password (not recorded)" id="dummyPass" autocomplete="off" />
+          <button id="dummySubmit">Sign in</button>
+          <p class="dummy-tag">⚠ Field values are discarded on submit — nothing is sent or stored.</p>
+        </div>
+      </div>
+    </div>
+
+    <p style="font-size:12.5px;color:var(--ink-soft);margin-top:16px;">Submitting (with any or no input) immediately routes to the debrief — this reproduces the "moment of realization" a real participant experiences, without ever reading the fields into memory beyond this render.</p>
+  </section>
+
+  <!-- ============ PANEL 4: DEBRIEF ============ -->
+  <section class="panel" id="panel-debrief">
+    <h2 class="panel-title">Debrief &amp; education</h2>
+    <div id="debriefBadgeWrap"></div>
+    <p class="panel-desc" id="debriefIntro">This page explains what made the message suspicious and how to spot the next one.</p>
+
+    <h4 style="margin-bottom:10px;font-size:14px;">Indicators in this message</h4>
+    <ul class="indicator-list" id="indicatorList"></ul>
+
+    <div class="edu-grid">
+      <div class="edu-card">
+        <div class="n">01</div>
+        <h4>Inspect the sender</h4>
+        <p>Check the full email address behind the display name, not just the name shown — look for lookalike domains, extra subdomains, or a mismatch with the organization the message claims to be from.</p>
+      </div>
+      <div class="edu-card">
+        <div class="n">02</div>
+        <h4>Hover before you click</h4>
+        <p>Hovering reveals a link's true destination. Mismatched domains, URL shorteners, and IP addresses in place of a hostname are all warning signs.</p>
+      </div>
+      <div class="edu-card">
+        <div class="n">03</div>
+        <h4>Notice urgency and fear</h4>
+        <p>Phrases like "act now," "account suspended," or a countdown timer are designed to make you skip the usual verification steps. Slowing down is itself a defense.</p>
+      </div>
+      <div class="edu-card">
+        <div class="n">04</div>
+        <h4>Never sign in via email links</h4>
+        <p>Navigate to the service directly by typing the known address or using a saved bookmark, instead of a link in an unsolicited message — real services rarely require it.</p>
+      </div>
+    </div>
+
+    <div class="report-steps">
+      <strong>How to report a suspicious message</strong>
+      <ol>
+        <li>Use your mail client's "Report phishing" button if available.</li>
+        <li>Otherwise, forward the message as an attachment to your security/IT team's reporting address.</li>
+        <li>Do not reply to the sender or click any links first.</li>
+        <li>Delete the message once it's been reported.</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============ PANEL 5: ADMIN DASHBOARD ============ -->
+  <section class="panel" id="panel-dashboard">
+    <h2 class="panel-title">Trainer dashboard — aggregate results</h2>
+    <p class="panel-desc">Only non-sensitive training metrics are shown: whether a message was opened, clicked, reported, and how long reporting took. No credentials, tokens, or message content submitted by participants are ever captured.</p>
+
+    <div class="dash-controls">
+      <button class="action" id="simParticipantBtn">+ Simulate a participant run</button>
+      <button class="action" id="exportCsvBtn">Export CSV</button>
+      <button class="action" id="resetBtn" style="margin-left:auto;">Reset all data</button>
+    </div>
+
+    <div class="stat-grid" id="statGrid"></div>
+
+    <div id="runsWrap"></div>
+  </section>
+
+  <!-- ============ PANEL 6: EXECUTIVE REPORT ============ -->
+  <section class="panel" id="panel-report">
+    <div class="no-print">
+      <h2 class="panel-title">Executive report</h2>
+      <p class="panel-desc">A client-ready write-up compiled from this run's data — summary, risk rating, findings, and remediation steps. Print to PDF or export as Markdown to hand off.</p>
+      <div class="dash-controls">
+        <button class="action primary" id="printReportBtn">🖨 Print / Save as PDF</button>
+        <button class="action" id="exportMdBtn">Export as Markdown</button>
+      </div>
+    </div>
+
+    <article class="report-doc" id="reportDoc"></article>
+  </section>
+
+</main>
+
+<footer class="note">
+  Internal training tool. All interaction data is stored only in this browser session for this exercise and is not transmitted anywhere. Clear it anytime with "Reset all data." At hand-off, review and purge this data per your organization's retention policy.
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------------- scenario data ----------------
+  const SCENARIOS = {
+    m365: {
+      key: "m365",
+      label: "Microsoft 365 Security Alert",
+      desc: "Unusual sign-in activity notice",
+      subject: "Unusual sign-in activity detected on your account",
+      from: '"Microsoft 365 Security" <account-security@micr0soft-alerts.com>',
+      cta: "Review recent activity",
+      indicators: [
+        "Sender domain reads \u201cmicr0soft-alerts.com\u201d \u2014 a lookalike, not a real Microsoft domain.",
+        "Creates urgency by implying the account is already compromised.",
+        "The review link routes through a generic tracking redirect rather than a Microsoft address.",
+        "Asks you to \u201cverify your identity\u201d by signing in through the email rather than your usual bookmark."
+      ],
+      bodyHtml: function(name){
+        return `
+          <p>Hi ${name},</p>
+          <p>We detected a sign-in to your account from a new device in a location we don't recognize. If this wasn't you, your account may be at risk.</p>
+          <p><b>Device:</b> Unknown Windows PC &nbsp; <b>Location:</b> Lagos, Nigeria &nbsp; <b>Time:</b> 03:14 AM</p>
+          <a href="#" class="cta-btn sim-link">Review recent activity</a>
+          <p class="sub-link">https://micr0soft-alerts.com/secure/review?id=8f2c91a3</p>
+          <p>If you don't recognize this activity, please review your account immediately to secure it.</p>
+        `;
+      }
+    },
+    pwexpire: {
+      key: "pwexpire",
+      label: "Password Expiration Warning",
+      desc: "Your password expires today",
+      subject: "ACTION REQUIRED: Your password expires in 2 hours",
+      from: '"IT Service Desk" <no-reply@company-itservices-portal.com>',
+      cta: "Reset password now",
+      indicators: [
+        "Artificial 2-hour deadline designed to prevent careful checking.",
+        "Sender domain doesn't match the organization's actual domain.",
+        "\u201cACTION REQUIRED\u201d in the subject line is a classic urgency trigger.",
+        "Generic greeting instead of using your actual name or team."
+      ],
+      bodyHtml: function(name){
+        return `
+          <p>Dear User,</p>
+          <p>Our records show your network password will expire in <b>2 hours</b>. To avoid losing access to email and shared drives, please reset it now using the secure link below.</p>
+          <a href="#" class="cta-btn sim-link">Reset password now</a>
+          <p class="sub-link">https://company-itservices-portal.com/pwreset?u=8f2c91</p>
+          <p>Failure to reset your password before expiration may result in account lockout.</p>
+        `;
+      }
+    },
+    itsupport: {
+      key: "itsupport",
+      label: "Fake IT-Support Notification",
+      desc: "Ticket requires your confirmation",
+      subject: "Re: Your IT ticket #45218 \u2014 confirmation needed",
+      from: '"IT Help Desk" <helpdesk@company-support-team.net>',
+      cta: "Confirm ticket details",
+      indicators: [
+        "References a ticket you never opened \u2014 a pretext to get a reply or click.",
+        "External domain impersonating an internal help desk address.",
+        "\u201cRe:\u201d prefix implies an ongoing thread that doesn't exist.",
+        "Pressure to \u201cconfirm\u201d quickly to avoid a vaguely described consequence."
+      ],
+      bodyHtml: function(name){
+        return `
+          <p>Hi ${name},</p>
+          <p>This is a follow-up on IT ticket #45218 regarding your recent access request. We need you to confirm your details to proceed, or the ticket will be automatically closed and access revoked.</p>
+          <a href="#" class="cta-btn sim-link">Confirm ticket details</a>
+          <p class="sub-link">https://company-support-team.net/tickets/45218/confirm</p>
+          <p>Thanks for your quick attention to this.</p>
+        `;
+      }
+    },
+    docshare: {
+      key: "docshare",
+      label: "Shared Document Notification",
+      desc: "Someone shared a file with you",
+      subject: "A document has been shared with you: \u201cQ3 Budget Review.xlsx\u201d",
+      from: '"Document Share" <notify@secure-filedrop-share.com>',
+      cta: "View document",
+      indicators: [
+        "Generic \u201cDocument Share\u201d sender name with no connection to a known colleague.",
+        "Domain is unrelated to any file-sharing platform the company actually uses.",
+        "Appeals to curiosity (\u201cBudget Review\u201d) to prompt an impulsive click.",
+        "No context about who sent it or why \u2014 real shares usually name a person."
+      ],
+      bodyHtml: function(name){
+        return `
+          <p>Hello ${name},</p>
+          <p>A colleague has shared the following document with you:</p>
+          <p><b>\u201cQ3 Budget Review.xlsx\u201d</b></p>
+          <a href="#" class="cta-btn sim-link">View document</a>
+          <p class="sub-link">https://secure-filedrop-share.com/d/8f2c91a3</p>
+          <p>This link will expire in 24 hours.</p>
+        `;
+      }
+    }
+  };
+
+  let state = {
+    scenario: "m365",
+    targetName: "Alex Mwangi",
+    cohortSize: 18,
+    currentRunPath: null // "clicked" | "reported" | "ignored"
+  };
+
+  const STORE_KEY = "phishsim_runs_v1";
+
+  function loadRuns() {
+    try { return JSON.parse(localStorage.getItem(STORE_KEY) || "[]"); }
+    catch(e) { return []; }
+  }
+  function saveRuns(runs) {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(runs)); } catch(e) {}
+  }
+  function addRun(run) {
+    const runs = loadRuns();
+    runs.push(run);
+    saveRuns(runs);
+    renderDashboard();
+  }
+
+  // ---------------- tabs ----------------
+  const tabBtns = document.querySelectorAll(".tab-btn");
+  const panels = document.querySelectorAll(".panel");
+  function showPanel(name) {
+    panels.forEach(p => p.classList.toggle("active", p.id === "panel-" + name));
+    tabBtns.forEach(b => b.classList.toggle("active", b.dataset.panel === name));
+    if (name === "dashboard") renderDashboard();
+    if (name === "report") renderReport();
+    window.scrollTo({top:0, behavior:"smooth"});
+  }
+  tabBtns.forEach(b => b.addEventListener("click", () => showPanel(b.dataset.panel)));
+
+  // ---------------- scenario builder ----------------
+  const scenarioGrid = document.getElementById("scenarioGrid");
+  function renderScenarioGrid() {
+    scenarioGrid.innerHTML = "";
+    Object.values(SCENARIOS).forEach(s => {
+      const card = document.createElement("button");
+      card.className = "scenario-card" + (s.key === state.scenario ? " selected" : "");
+      card.innerHTML = `<div class="k">Scenario</div><div class="t">${s.label}</div><div class="d">${s.desc}</div>`;
+      card.addEventListener("click", () => {
+        state.scenario = s.key;
+        renderScenarioGrid();
+      });
+      scenarioGrid.appendChild(card);
+    });
+  }
+  renderScenarioGrid();
+
+  document.getElementById("targetName").addEventListener("input", e => {
+    state.targetName = e.target.value || "Alex Mwangi";
+  });
+  document.getElementById("cohortSize").addEventListener("input", e => {
+    state.cohortSize = Math.max(1, Math.min(19, parseInt(e.target.value || "18", 10)));
+    updateScopeTag();
+  });
+  function updateScopeTag() {
+    document.getElementById("scopeTag").textContent = `COHORT: ${state.cohortSize} / 20 · IT & HR`;
+  }
+  updateScopeTag();
+
+  document.getElementById("toInboxBtn").addEventListener("click", () => {
+    buildInbox();
+    showPanel("inbox");
+  });
+
+  // ---------------- inbox ----------------
+  function buildInbox() {
+    const s = SCENARIOS[state.scenario];
+    document.getElementById("mSubject").textContent = s.subject;
+    document.getElementById("mFrom").textContent = s.from;
+    document.getElementById("mTo").textContent = state.targetName + " <" + state.targetName.toLowerCase().replace(/\s+/g,'.') + "@yourcompany.com>";
+    document.getElementById("mBody").innerHTML = s.bodyHtml(state.targetName.split(" ")[0]);
+    document.getElementById("inboxTimestamp").textContent = new Date().toLocaleString();
+
+    document.getElementById("clickBtn").disabled = true;
+    document.getElementById("reportBtn").disabled = true;
+    document.getElementById("openBtn").disabled = false;
+
+    state.currentRunPath = null;
+    state.runStart = null;
+  }
+
+  document.getElementById("openBtn").addEventListener("click", function(){
+    this.disabled = true;
+    state.runStart = Date.now();
+    document.getElementById("clickBtn").disabled = false;
+    document.getElementById("reportBtn").disabled = false;
+  });
+
+  document.getElementById("clickBtn").addEventListener("click", () => {
+    state.currentRunPath = "clicked";
+    const s = SCENARIOS[state.scenario];
+    document.getElementById("fakeUrl").textContent = "training-sim.internal.local/exercise/" + Math.random().toString(16).slice(2,8);
+    showPanel("landing");
+  });
+
+  document.getElementById("reportBtn").addEventListener("click", () => {
+    const elapsed = state.runStart ? Math.round((Date.now() - state.runStart) / 1000) : null;
+    addRun({
+      id: "P-" + Math.random().toString(36).slice(2, 7).toUpperCase(),
+      scenario: SCENARIOS[state.scenario].label,
+      opened: true,
+      clicked: false,
+      submitted: false,
+      reported: true,
+      reportSeconds: elapsed,
+      ts: new Date().toISOString()
+    });
+    state.currentRunPath = "reported";
+    renderDebrief();
+    showPanel("debrief");
+  });
+
+  // ---------------- landing page ----------------
+  document.getElementById("dummySubmit").addEventListener("click", () => {
+    // Clear fields immediately — values are never read into state or stored.
+    document.getElementById("dummyUser").value = "";
+    document.getElementById("dummyPass").value = "";
+
+    addRun({
+      id: "P-" + Math.random().toString(36).slice(2, 7).toUpperCase(),
+      scenario: SCENARIOS[state.scenario].label,
+      opened: true,
+      clicked: true,
+      submitted: true,
+      reported: false,
+      reportSeconds: null,
+      ts: new Date().toISOString()
+    });
+    renderDebrief();
+    showPanel("debrief");
+  });
+
+  // ---------------- debrief ----------------
+  function renderDebrief() {
+    const s = SCENARIOS[state.scenario];
+    const wrap = document.getElementById("debriefBadgeWrap");
+    const intro = document.getElementById("debriefIntro");
+
+    if (state.currentRunPath === "reported") {
+      wrap.innerHTML = '<div class="debrief-badge">✓ Nice catch — this was a security-awareness simulation</div>';
+      intro.textContent = "You reported this message before interacting further. That's exactly the right response — here's what gave it away.";
+    } else {
+      wrap.innerHTML = '<div class="debrief-badge red">⚠ This was a security-awareness simulation</div>';
+      intro.textContent = "This message and page were part of an authorized internal exercise. No real credentials were collected. Here's what made it suspicious.";
+    }
+
+    const list = document.getElementById("indicatorList");
+    list.innerHTML = "";
+    s.indicators.forEach(i => {
+      const li = document.createElement("li");
+      li.textContent = i;
+      list.appendChild(li);
+    });
+  }
+
+  // ---------------- dashboard ----------------
+  function renderDashboard() {
+    const runs = loadRuns();
+    const statGrid = document.getElementById("statGrid");
+    const runsWrap = document.getElementById("runsWrap");
+
+    const total = runs.length;
+    const clicked = runs.filter(r => r.clicked).length;
+    const reported = runs.filter(r => r.reported).length;
+    const reportTimes = runs.filter(r => r.reported && r.reportSeconds != null).map(r => r.reportSeconds);
+    const avgReport = reportTimes.length ? Math.round(reportTimes.reduce((a,b)=>a+b,0) / reportTimes.length) : null;
+
+    statGrid.innerHTML = `
+      <div class="stat"><div class="v">${total}</div><div class="l">TOTAL RUNS</div></div>
+      <div class="stat warn"><div class="v">${total ? Math.round(clicked/total*100) : 0}%</div><div class="l">CLICK RATE</div></div>
+      <div class="stat good"><div class="v">${total ? Math.round(reported/total*100) : 0}%</div><div class="l">REPORT RATE</div></div>
+      <div class="stat"><div class="v">${avgReport !== null ? avgReport + "s" : "—"}</div><div class="l">AVG. TIME TO REPORT</div></div>
+    `;
+
+    if (!runs.length) {
+      runsWrap.innerHTML = '<div class="empty-state">No runs yet. Walk through the Inbox and Training Page tabs, or click "Simulate a participant run" to populate example data.</div>';
+      return;
+    }
+
+    let rows = runs.slice().reverse().map(r => {
+      let pill;
+      if (r.reported) pill = '<span class="pill reported">Reported</span>';
+      else if (r.submitted) pill = '<span class="pill clicked">Clicked &amp; submitted</span>';
+      else if (r.clicked) pill = '<span class="pill clicked">Clicked</span>';
+      else if (r.opened) pill = '<span class="pill opened">Opened only</span>';
+      else pill = '<span class="pill ignored">No interaction</span>';
+      return `<tr>
+        <td style="font-family:var(--mono);">${r.id}</td>
+        <td>${r.scenario}</td>
+        <td>${pill}</td>
+        <td>${r.reportSeconds != null ? r.reportSeconds + "s" : "—"}</td>
+        <td style="color:var(--ink-soft);">${new Date(r.ts).toLocaleString()}</td>
+      </tr>`;
+    }).join("");
+
+    runsWrap.innerHTML = `
+      <table class="runs">
+        <thead><tr><th>Participant ID</th><th>Scenario</th><th>Outcome</th><th>Report time</th><th>Timestamp</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  }
+
+  // ---------------- executive report ----------------
+  function riskFromRate(clickRate, reportRate) {
+    if (clickRate >= 40 && reportRate < 20) return { level: "high", label: "Elevated risk" };
+    if (clickRate >= 20 || reportRate < 40) return { level: "moderate", label: "Moderate risk" };
+    return { level: "low", label: "Low risk" };
+  }
+
+  function reportData() {
+    const runs = loadRuns();
+    const total = runs.length;
+    const opened = runs.filter(r => r.opened).length;
+    const clicked = runs.filter(r => r.clicked).length;
+    const submitted = runs.filter(r => r.submitted).length;
+    const reported = runs.filter(r => r.reported).length;
+    const reportTimes = runs.filter(r => r.reported && r.reportSeconds != null).map(r => r.reportSeconds);
+    const avgReport = reportTimes.length ? Math.round(reportTimes.reduce((a,b)=>a+b,0) / reportTimes.length) : null;
+    const clickRate = total ? Math.round(clicked/total*100) : 0;
+    const reportRate = total ? Math.round(reported/total*100) : 0;
+    const scenariosUsed = [...new Set(runs.map(r => r.scenario))];
+    const risk = riskFromRate(clickRate, reportRate);
+    return { runs, total, opened, clicked, submitted, reported, avgReport, clickRate, reportRate, scenariosUsed, risk };
+  }
+
+  function buildFindings(d) {
+    const findings = [];
+    if (d.total === 0) {
+      findings.push({ ok: false, text: "No participant runs recorded yet — findings and ratings below are placeholders until at least one run (real or simulated) is logged." });
+      return findings;
+    }
+    if (d.clickRate >= 40) {
+      findings.push({ ok: false, text: `${d.clickRate}% of participants clicked the simulated link — above the ~20% benchmark typical of a well-trained cohort. Indicates limited recognition of lure cues (sender domain, urgency language, link mismatch).` });
+    } else if (d.clickRate >= 20) {
+      findings.push({ ok: false, text: `${d.clickRate}% click rate is within a moderate range — some staff are recognizing indicators, but gaps remain in at least one scenario type.` });
+    } else {
+      findings.push({ ok: true, text: `${d.clickRate}% click rate is strong for this cohort size, suggesting good baseline awareness of phishing indicators.` });
+    }
+    if (d.reportRate < 20) {
+      findings.push({ ok: false, text: `Only ${d.reportRate}% of runs resulted in the message being reported. Low reporting — even among staff who didn't click — limits the security team's visibility into live attempts.` });
+    } else {
+      findings.push({ ok: true, text: `${d.reportRate}% of runs ended in a report, giving the security team usable early-warning signal.` });
+    }
+    if (d.avgReport !== null) {
+      if (d.avgReport > 300) {
+        findings.push({ ok: false, text: `Average time-to-report was ${d.avgReport}s (${Math.round(d.avgReport/60)} min) — slower reporting widens the window an active campaign could operate in before detection.` });
+      } else {
+        findings.push({ ok: true, text: `Average time-to-report was ${d.avgReport}s, indicating participants acted promptly once suspicious.` });
+      }
+    }
+    if (d.submitted > 0) {
+      findings.push({ ok: false, text: `${d.submitted} participant(s) proceeded to submit the dummy sign-in form — the highest-risk outcome, as it mirrors the point where real credential theft would occur.` });
+    }
+    return findings;
+  }
+
+  function buildRemediation(d) {
+    const steps = [];
+    if (d.total === 0 || d.clickRate >= 20 || d.submitted > 0) {
+      steps.push("Run a short (10–15 min) follow-up awareness session covering sender-verification and link-hover habits, focused on the scenario types used here.");
+    }
+    if (d.reportRate < 40) {
+      steps.push("Publicize and simplify the reporting path — e.g. a single \u201cReport Phishing\u201d button in the mail client — and recognize staff who report promptly to reinforce the behavior.");
+    }
+    if (d.submitted > 0) {
+      steps.push("For participants who reached the credential-entry step, schedule a brief 1:1 refresher rather than a public callout, to keep the exercise blameless.");
+    }
+    steps.push("Re-run this simulation with a different lure scenario in 60–90 days to measure improvement and avoid staff pattern-matching this specific campaign.");
+    steps.push("Confirm the security team's own SLA for acting on employee-reported phishing — the exercise measures employee response, but the full incident-response loop depends on timely triage too.");
+    return steps;
+  }
+
+  function renderReport() {
+    const d = reportData();
+    const doc = document.getElementById("reportDoc");
+    const findings = buildFindings(d);
+    const remediation = buildRemediation(d);
+    const dateStr = new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+
+    doc.innerHTML = `
+      <div class="r-head">
+        <div>
+          <h3>Phishing Awareness Simulation — Executive Summary</h3>
+          <div class="meta">Prepared ${dateStr} · Cohort: ${state.cohortSize}/20 (IT &amp; HR) · Scenarios used: ${d.scenariosUsed.length ? d.scenariosUsed.join(", ") : "none run yet"}</div>
+        </div>
+        <span class="risk-chip ${d.risk.level}">${d.risk.label.toUpperCase()}</span>
+      </div>
+
+      <p>This report summarizes the results of an authorized, internal phishing-awareness exercise. No real credentials, authentication tokens, or personal data were collected at any point \u2014 all metrics below reflect interaction behavior only (opened / clicked / reported), captured for training purposes.</p>
+
+      <h4 class="r-section">Results at a glance</h4>
+      <div class="r-stats">
+        <div><span class="v">${d.total}</span><span class="l">RUNS</span></div>
+        <div><span class="v">${d.clickRate}%</span><span class="l">CLICK RATE</span></div>
+        <div><span class="v">${d.reportRate}%</span><span class="l">REPORT RATE</span></div>
+        <div><span class="v">${d.avgReport !== null ? d.avgReport + "s" : "\u2014"}</span><span class="l">AVG. REPORT TIME</span></div>
+      </div>
+
+      <h4 class="r-section">Detailed findings</h4>
+      ${findings.map(f => `<div class="finding ${f.ok ? "ok" : ""}">${f.text}</div>`).join("")}
+
+      <h4 class="r-section">Recommended remediation steps</h4>
+      <ol>${remediation.map(s => `<li>${s}</li>`).join("")}</ol>
+
+      <h4 class="r-section">Scope &amp; authorization</h4>
+      <p>This exercise was limited to a pre-approved cohort of fewer than twenty staff across the IT and HR departments, run with organizational authorization. All simulated messages, landing pages, and this report are property of the organization per the engagement terms.</p>
+
+      <div class="r-foot">Generated by the JasD Phishing Awareness Simulation console. Data shown reflects interaction metadata only, stored locally for this exercise.</div>
+    `;
+  }
+
+  document.getElementById("printReportBtn").addEventListener("click", () => {
+    renderReport();
+    setTimeout(() => window.print(), 50);
+  });
+
+  document.getElementById("exportMdBtn").addEventListener("click", async () => {
+    const d = reportData();
+    const findings = buildFindings(d);
+    const remediation = buildRemediation(d);
+    const dateStr = new Date().toLocaleDateString();
+    let md = `# Phishing Awareness Simulation — Executive Summary\n\n`;
+    md += `Prepared ${dateStr} · Cohort: ${state.cohortSize}/20 (IT & HR) · Scenarios used: ${d.scenariosUsed.length ? d.scenariosUsed.join(", ") : "none run yet"}\n`;
+    md += `**Risk rating: ${d.risk.label}**\n\n`;
+    md += `## Results at a glance\n\n`;
+    md += `- Total runs: ${d.total}\n- Click rate: ${d.clickRate}%\n- Report rate: ${d.reportRate}%\n- Avg. time to report: ${d.avgReport !== null ? d.avgReport + "s" : "—"}\n\n`;
+    md += `## Detailed findings\n\n`;
+    findings.forEach(f => { md += `- ${f.text}\n`; });
+    md += `\n## Recommended remediation steps\n\n`;
+    remediation.forEach((s,i) => { md += `${i+1}. ${s}\n`; });
+    md += `\n## Scope & authorization\n\nLimited to a pre-approved cohort of fewer than twenty staff (IT & HR), run with organizational authorization. No real credentials, tokens, or personal data were collected.\n`;
+
+    try {
+      const downloads = await (window.claude ? window.claude.use("downloads") : Promise.resolve(null));
+      if (downloads) {
+        await downloads.save({ filename: "phishing-sim-executive-report.md", data: md });
+        return;
+      }
+    } catch (e) { /* fall through */ }
+
+    const win = window.open("", "_blank");
+    if (win) {
+      win.document.write("<pre style='white-space:pre-wrap;font-family:monospace;padding:20px;'>" + md.replace(/</g,"&lt;") + "</pre>");
+    } else {
+      alert("Download isn't available in this view. Report:\n\n" + md.slice(0, 1000));
+    }
+  });
+
+  document.getElementById("simParticipantBtn").addEventListener("click", () => {
+    const scenarios = Object.values(SCENARIOS);
+    const s = scenarios[Math.floor(Math.random() * scenarios.length)];
+    const roll = Math.random();
+    let run;
+    if (roll < 0.35) {
+      run = { opened: true, clicked: false, submitted: false, reported: true, reportSeconds: 15 + Math.floor(Math.random()*120) };
+    } else if (roll < 0.55) {
+      run = { opened: true, clicked: true, submitted: true, reported: false, reportSeconds: null };
+    } else if (roll < 0.8) {
+      run = { opened: true, clicked: false, submitted: false, reported: false, reportSeconds: null };
+    } else {
+      run = { opened: false, clicked: false, submitted: false, reported: false, reportSeconds: null };
+    }
+    addRun(Object.assign({
+      id: "P-" + Math.random().toString(36).slice(2, 7).toUpperCase(),
+      scenario: s.label,
+      ts: new Date().toISOString()
+    }, run));
+  });
+
+  document.getElementById("resetBtn").addEventListener("click", () => {
+    if (confirm("Clear all recorded training runs from this browser?")) {
+      saveRuns([]);
+      renderDashboard();
+    }
+  });
+
+  document.getElementById("exportCsvBtn").addEventListener("click", async () => {
+    const runs = loadRuns();
+    const header = "participant_id,scenario,opened,clicked,submitted,reported,report_seconds,timestamp\n";
+    const rows = runs.map(r => [
+      r.id, r.scenario, r.opened, r.clicked, r.submitted, r.reported,
+      r.reportSeconds != null ? r.reportSeconds : "", r.ts
+    ].join(",")).join("\n");
+    const csv = header + rows;
+
+    try {
+      const downloads = await (window.claude ? window.claude.use("downloads") : Promise.resolve(null));
+      if (downloads) {
+        await downloads.save({ filename: "phishing-sim-results.csv", data: csv });
+        return;
+      }
+    } catch (e) { /* fall through to manual copy */ }
+
+    // Fallback: show the CSV for manual copy if the downloads capability is unavailable here.
+    const win = window.open("", "_blank");
+    if (win) {
+      win.document.write("<pre style='white-space:pre-wrap;font-family:monospace;padding:20px;'>" + csv.replace(/</g,"&lt;") + "</pre>");
+    } else {
+      alert("Download isn't available in this view. CSV data:\n\n" + csv.slice(0, 1000));
+    }
+  });
+
+  // init
+  buildInbox();
+  renderDashboard();
+  renderReport();
+})();
+</script>
+</body>
+</html>
